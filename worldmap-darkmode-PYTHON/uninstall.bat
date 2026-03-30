@@ -1,9 +1,9 @@
 @echo off
 setlocal EnableDelayedExpansion
-title Dark Mode Map v1.1 - Uninstall
+title Dark Mode Map v1.1.1 - Uninstall
 color 0C
 
-echo  Dark Mode Map v1.1 - Uninstall
+echo  Dark Mode Map v1.1.1 - Uninstall
 echo.
 
 set "SD=%~dp0"
