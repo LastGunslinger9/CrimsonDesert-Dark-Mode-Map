@@ -1,5 +1,6 @@
 """
-Dark Mode Map standalone patcher for Crimson Desert.
+Dark Mode Map: Standalone patcher
+
 Usage:
     python patch.py <game_dir>            # install dark mode
     python patch.py <game_dir> --restore  # restore vanilla
@@ -9,25 +10,14 @@ import lz4.block
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# PAZ entry discovery via PAMT index (game-update-proof)
+# PAZ entry discovery via PAMT index
 # ---------------------------------------------------------------------------
-PAMT_SUBPATH = '0012/0.pamt'
-CSS_FILENAME  = 'worldmapview.css'
-
-DEAD_COMMENT = (
-    '/* .worldmap-top-dimmed { opacity: 1; position: absolute; '
-    'width: 100%; height: 100%; background-color: #1c1c1c; top: 0; '
-    'left: 0; background-image: textureid(cd_common_decoline_pattern_diagonal_04); '
-    'background-repeat: repeat; background-blend-mode: multiply; '
-    'mask-gradient-direction: all; mask-gradient-start-opacity: 0; '
-    'mask-gradient-end-opacity: 1; mask-gradient-width: 700px; '
-    'background-size: 48.000000px auto; } */'
-)
+CSS_FILENAME = 'worldmapview.css'
 
 HERE = Path(__file__).parent
 
 # ---------------------------------------------------------------------------
-# Inline ChaCha20 key derivation (mirrors paz_crypto.py, no external tools needed)
+# Inline ChaCha20 key derivation (mirrors paz_crypto.py)
 # Requires: cryptography  (pip install cryptography)
 # ---------------------------------------------------------------------------
 _HASH_INITVAL = 0x000C5EDE
@@ -88,17 +78,47 @@ class _FILETIME(ctypes.Structure):
     _fields_ = [('lo', ctypes.c_uint32), ('hi', ctypes.c_uint32)]
 
 
-def _find_css_entry(game_dir: Path) -> tuple[Path, int, int, int]:
-    """Parse PAMT index and return (paz_path, offset, comp_size, orig_size) for worldmapview.css."""
-    pamt_path = game_dir / PAMT_SUBPATH.replace('/', '\\')
-    if not pamt_path.exists():
-        raise FileNotFoundError(f'PAMT not found: {pamt_path}')
-
-    data = pamt_path.read_bytes()
+def _search_pamt(pamt_path: Path) -> tuple[Path, int, int, int] | None:
+    """Search one PAMT file for worldmapview.css. Returns (paz_path, offset, comp_size, orig_size) or None."""
+    try:
+        data = pamt_path.read_bytes()
+    except OSError:
+        return None
     paz_dir = str(pamt_path.parent)
+    pamt_stem = pamt_path.stem  # e.g. '0'
+    try:
+        stem_num = int(pamt_stem)
+    except ValueError:
+        stem_num = 0
+
+    try:
+        return _parse_pamt_for_css(data, paz_dir, stem_num)
+    except Exception:
+        return None
+
+
+def _find_css_entry(game_dir: Path) -> tuple[Path, int, int, int]:
+    """Scan all PAMT files in game_dir and return (paz_path, offset, comp_size, orig_size) for worldmapview.css."""
+    pamt_files = sorted(game_dir.glob('*/0.pamt'))
+    if not pamt_files:
+        raise FileNotFoundError(f'No PAMT files found under {game_dir}')
+
+    for pamt_path in pamt_files:
+        result = _search_pamt(pamt_path)
+        if result is not None:
+            return result
+
+    raise FileNotFoundError(f'{CSS_FILENAME} not found in any PAMT under {game_dir}')
+
+
+def _parse_pamt_for_css(data: bytes, paz_dir: str, stem_num: int) -> tuple[Path, int, int, int] | None:
+    """Parse PAMT bytes and return CSS entry, or None if not found."""
+    if len(data) < 8:
+        return None
 
     off = 0
     off += 4  # magic
+    if off + 4 > len(data): return None
     paz_count = struct.unpack_from('<I', data, off)[0]; off += 4
     off += 8  # hash + zero
     for i in range(paz_count):
@@ -155,10 +175,11 @@ def _find_css_entry(game_dir: Path) -> tuple[Path, int, int, int]:
         full_path = f'{folder_prefix}/{node_path}' if folder_prefix else node_path
         if full_path.lower().endswith(target):
             paz_index = flags & 0xFF
-            paz_file = Path(paz_dir) / f'{paz_index}.paz'
+            paz_num = stem_num + paz_index
+            paz_file = Path(paz_dir) / f'{paz_num}.paz'
             return paz_file, paz_offset, comp_size, orig_size
 
-    raise FileNotFoundError(f'{CSS_FILENAME} not found in PAMT index: {pamt_path}')
+    return None
 
 
 def extract_vanilla(paz_path: Path, offset: int, comp_size: int, orig_size: int) -> bytes:
@@ -209,8 +230,6 @@ def apply_color(text: str, old_str: str, cur_rgb: str) -> tuple[str, int]:
     alpha = orig_hex[7:] if len(orig_hex) > 7 else ''
     new_hex = cur_rgb + alpha
     new_str = old_str.replace(orig_hex, new_hex)
-    if len(old_str) != len(new_str):
-        raise ValueError(f'Length mismatch {len(old_str)} vs {len(new_str)}: {old_str!r} -> {new_str!r}')
     count = text.count(old_str)
     if count == 0:
         print(f'  WARNING: not found - {old_str.strip()[:60]}')
@@ -227,8 +246,6 @@ def apply_color_scoped(text: str, preset: str, old_str: str, cur_rgb: str) -> tu
     alpha = orig_hex[7:] if len(orig_hex) > 7 else ''
     new_hex = cur_rgb + alpha
     new_str = old_str.replace(orig_hex, new_hex)
-    if len(old_str) != len(new_str):
-        raise ValueError(f'Length mismatch {len(old_str)} vs {len(new_str)}: {old_str!r} -> {new_str!r}')
     block_pat = re.compile(
         r'(@material-param ' + re.escape(preset) + r'\s*\{.*?\})(?=\s*@material-param |\s*\Z)',
         re.DOTALL)
@@ -244,12 +261,83 @@ def apply_color_scoped(text: str, preset: str, old_str: str, cur_rgb: str) -> tu
     return text[:bm.start()] + new_block + text[bm.end():], 1
 
 
-# Deterministic printable fill for dead-comment body tuning (excludes * to keep comment valid)
+# Printable fill for CSS comment body tuning. Excludes * to prevent premature comment close
 _PRINTABLE_FILL = bytes(c for c in range(0x21, 0x7F) if c != 0x2A)  # 93 chars
 
 
+def _pad_to_orig_size(data: bytes, orig_size: int) -> bytes:
+    if len(data) >= orig_size:
+        return data[:orig_size]
+    return data + b'\x00' * (orig_size - len(data))
+
+
+def _find_css_comments(data: bytes) -> list[tuple[int, int]]:
+    """Return (content_start, content_end) for every /* ... */ comment in data."""
+    comments = []
+    search_from = 0
+    while True:
+        start = data.find(b'/*', search_from)
+        if start == -1:
+            break
+        content_start = start + 2
+        end = data.find(b'*/', content_start)
+        if end == -1:
+            break
+        if end > content_start:
+            comments.append((content_start, end))
+        search_from = end + 2
+    return comments
+
+
+def _shrink_to_orig_size(data: bytes, orig_size: int) -> bytes:
+    """Shrink CSS bytes to orig_size by trimming comment bodies and whitespace."""
+    if len(data) <= orig_size:
+        return _pad_to_orig_size(data, orig_size)
+
+    excess = len(data) - orig_size
+    result = bytearray(data)
+
+    # Phase 1: trim CSS comment bodies from largest to smallest.
+    comments = _find_css_comments(bytes(result))
+    comments.sort(key=lambda c: c[1] - c[0], reverse=True)
+    for cstart, cend in comments:
+        if excess <= 0:
+            break
+        body_len = cend - cstart
+        removable = body_len - 1  # keep at least one byte so comment stays valid
+        if removable <= 0:
+            continue
+        to_remove = min(removable, excess)
+        result[cstart + 1:cstart + 1 + to_remove] = b''
+        excess -= to_remove
+        comments = _find_css_comments(bytes(result))
+        comments.sort(key=lambda c: c[1] - c[0], reverse=True)
+
+    # Phase 2: collapse trailing repeated spaces/tabs.
+    i = len(result) - 1
+    while i > 0 and excess > 0:
+        if result[i] in (0x20, 0x09) and result[i - 1] in (0x20, 0x09):
+            del result[i]
+            excess -= 1
+        i -= 1
+
+    if len(result) > orig_size:
+        raise ValueError(
+            f'Modified file is {len(data) - orig_size} bytes over orig_size ({orig_size}). '
+            f'Could only trim {len(data) - len(result)} bytes from comments/whitespace.'
+        )
+
+    return bytes(result) + b'\x00' * (orig_size - len(result))
+
+
+def fit_to_orig_size(plaintext: bytes, orig_size: int) -> bytes:
+    """Normalize plaintext to exactly orig_size bytes like the full repacker flow."""
+    if len(plaintext) > orig_size:
+        return _shrink_to_orig_size(plaintext, orig_size)
+    return _pad_to_orig_size(plaintext, orig_size)
+
+
 def _rand_fill(n: int) -> bytes:
-    """Return n deterministic pseudo-random bytes from _PRINTABLE_FILL."""
     import random
     rng = random.Random(0xC4FEB4BE)
     return bytes(rng.choice(_PRINTABLE_FILL) for _ in range(n))
@@ -259,25 +347,23 @@ def match_comp_size(plaintext_bytes: bytes, target: int) -> bytes:
     """LZ4-compress plaintext_bytes to exactly target compressed bytes.
 
     Fast path: if direct compress matches target, return immediately.
-    Slow path: binary-search the leading bytes of the DEAD_COMMENT body,
-    replacing them with deterministic pseudo-random printable ASCII
-    (incompressible) vs spaces (compressible) to tune compressed size.
+    Slow path: pick the largest CSS comment and binary-search filling its body
+    with pseudo-random printable ASCII (incompressible) vs spaces (compressible)
+    to tune the compressed size up or down to exactly target.
     """
     fast = lz4.block.compress(plaintext_bytes, store_size=False)
     if len(fast) == target:
         return fast
 
-    dc = DEAD_COMMENT.encode('utf-8')
-    dc_pos = plaintext_bytes.find(dc)
-    if dc_pos == -1:
+    comments = sorted(_find_css_comments(plaintext_bytes), key=lambda c: c[1] - c[0], reverse=True)
+    if not comments:
         raise RuntimeError(
-            f'Cannot match comp_size: direct compress={len(fast)} vs target={target},'
-            ' and DEAD_COMMENT not found for tuning.')
+            f'Cannot match comp_size={len(fast)} to target={target}: '
+            'no CSS comments found for tuning.')
 
-    body_start = dc_pos + 2           # skip '/*'
-    body_end   = dc_pos + len(dc) - 2  # before '*/'
-    body_len   = body_end - body_start
-    fill       = _rand_fill(body_len)
+    body_start, body_end = comments[0]
+    body_len = body_end - body_start
+    fill     = _rand_fill(body_len)
 
     def _build(n_fill: int) -> bytes:
         ba = bytearray(plaintext_bytes)
@@ -290,7 +376,8 @@ def match_comp_size(plaintext_bytes: bytes, target: int) -> bytes:
 
     if not (c_lo <= target <= c_hi):
         raise RuntimeError(
-            f'Could not match comp_size {target}: reachable range [{c_lo}, {c_hi}]. '
+            f'Could not match comp_size {target}: reachable range [{c_lo}, {c_hi}] '
+            f'(tuning comment at {body_start}..{body_end}, {body_len} bytes). '
             'The CSS may have changed after a game update.')
 
     lo, hi = 0, body_len
@@ -338,6 +425,7 @@ if __name__ == '__main__':
             raise ValueError('CSS markers not found in decompressed data')
     except Exception as e:
         print(f'ERROR: Failed to read {CSS_FILENAME} from PAZ ({e}).')
+        print('Restore original game files via Steam (right-click game → Properties → Local Files → Verify), then run again.')
         sys.exit(1)
 
     # ── Auto-backup vanilla CSS ───────────────────────────────────────
@@ -352,26 +440,47 @@ if __name__ == '__main__':
         # (e.g. after a game update). Refresh the backup automatically.
         if b'background-color: #FFF;}' in vanilla_bytes:
             backup_file.write_bytes(vanilla_bytes)
-            print('Game update detected, backup refreshed.')
+            print('Vanilla CSS detected in game files. Backup refreshed.')
 
     # ── Restore mode ─────────────────────────────────────────────────
     if restore_mode:
         print('Restoring vanilla CSS...')
+        if not backup_file.exists():
+            print('ERROR: No backup found. Run install first.')
+            sys.exit(1)
         source = backup_file.read_bytes()
-        payload = match_comp_size(source, comp_size)
-        write_paz(paz_path, offset, comp_size, payload)
+        try:
+            source.decode('utf-8')
+            if b'worldmapview' not in source and b'material-param' not in source:
+                raise ValueError('CSS markers missing')
+        except Exception as e:
+            print(f'ERROR: Backup file appears corrupt ({e}). Delete backup/worldmapview.css and re-run install.')
+            sys.exit(1)
+        adjusted = fit_to_orig_size(source, orig_size)
+        payload = match_comp_size(adjusted, comp_size)
+        try:
+            write_paz(paz_path, offset, comp_size, payload)
+        except Exception as e:
+            print(f'ERROR: Failed to write to PAZ ({e}).')
+            sys.exit(1)
         print('Done. Vanilla restored.')
         sys.exit(0)
 
     # ── Patch mode ────────────────────────────────────────────────────
     print('Applying dark mode...')
     text = backup_file.read_text(encoding='utf-8', newline='')
-    original_len = len(text)
 
     colors = json.loads((HERE / 'colors.json').read_text(encoding='utf-8'))
 
     # Hardcoded: sea background
-    text, _ = apply_color(text, 'background-color: #FFF;}', '#000')
+    sea_vanilla = 'background-color: #FFF;}'
+    sea_marker = 'background-color: #FFFFFF;}'
+    if sea_vanilla in text:
+        text = text.replace(sea_vanilla, sea_marker, 1)
+    elif sea_marker in text:
+        print('  NOTE: sea marker already set to #FFFFFF')
+    else:
+        print('  WARNING: sea background marker not found')
 
     # User-editable colors
     total = 0
@@ -383,15 +492,13 @@ if __name__ == '__main__':
             text, n = apply_color(text, entry['vanilla'], entry['mod'])
         total += n
 
-    if len(text) != original_len:
-        raise AssertionError('File size changed after color replacements!')
-
-    # Verify dead comment present (match_comp_size uses it for compressed-size tuning)
-    if text.count(DEAD_COMMENT) != 1:
-        raise AssertionError('Dead comment not found or duplicated, CSS may have changed after a game update')
-
     encoded = text.encode('utf-8')
-    payload = match_comp_size(encoded, comp_size)
-    write_paz(paz_path, offset, comp_size, payload)
+    adjusted = fit_to_orig_size(encoded, orig_size)
+    payload = match_comp_size(adjusted, comp_size)
+    try:
+        write_paz(paz_path, offset, comp_size, payload)
+    except Exception as e:
+        print(f'ERROR: Failed to write to PAZ ({e}).')
+        sys.exit(1)
     print(f'Done. Dark mode applied ({total} color replacements).')
 

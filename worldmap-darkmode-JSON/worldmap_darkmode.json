@@ -32,12 +32,6 @@
           "patched": "303330343035"
         },
         {
-          "offset": 6591,
-          "label": "background-color: #FFF -> #000 (sea bg)",
-          "original": "464646",
-          "patched": "303030"
-        },
-        {
           "offset": 9988,
           "label": "background-color: #352a27bf -> #c3cfe6",
           "original": "333532613237",

@@ -1,9 +1,9 @@
 @echo off
 setlocal EnableDelayedExpansion
-title Dark Mode Map v1.0 - Install
+title Dark Mode Map v1.1 - Install
 color 0A
 
-echo  Dark Mode Map v1.0 - Install
+echo  Dark Mode Map v1.1 - Install
 echo.
 
 set "SD=%~dp0"
@@ -64,12 +64,16 @@ if errorlevel 1 (
 
 :: ── Game detection: Steam registry + libraryfolders.vdf ───────────
 set "GAME_DIR="
+set "FOUND_AUTO=0"
 
 for /f "tokens=2*" %%A in ('reg query "HKCU\Software\Valve\Steam" /v SteamPath 2^>nul') do (
     set "STEAMPATH=%%B"
     set "STEAMPATH=!STEAMPATH:/=\!"
     if exist "!STEAMPATH!\steamapps\common\Crimson Desert\0012\0.pamt" (
-        if "!GAME_DIR!"=="" set "GAME_DIR=!STEAMPATH!\steamapps\common\Crimson Desert"
+        if "!GAME_DIR!"=="" (
+            set "GAME_DIR=!STEAMPATH!\steamapps\common\Crimson Desert"
+            set "FOUND_AUTO=1"
+        )
     )
     if "!GAME_DIR!"=="" (
         if exist "!STEAMPATH!\steamapps\libraryfolders.vdf" (
@@ -79,6 +83,7 @@ for /f "tokens=2*" %%A in ('reg query "HKCU\Software\Valve\Steam" /v SteamPath 2
                 if "!GAME_DIR!"=="" (
                     if exist "!LPATH!\steamapps\common\Crimson Desert\0012\0.pamt" (
                         set "GAME_DIR=!LPATH!\steamapps\common\Crimson Desert"
+                        set "FOUND_AUTO=1"
                     )
                 )
             )
@@ -111,6 +116,11 @@ if "!GAME_DIR!"=="" (
 
 :: ── Run ────────────────────────────────────────────────────────────
 echo.
+if "!FOUND_AUTO!"=="1" (
+    echo   Steam installation found automatically.
+) else (
+    echo   Using manually entered path.
+)
 echo   Game: !GAME_DIR!
 echo.
 
@@ -122,6 +132,6 @@ if errorlevel 1 (
 )
 
 echo.
-echo   Dark mode applied. Launch the game.
+echo   Launch the game.
 echo.
 pause

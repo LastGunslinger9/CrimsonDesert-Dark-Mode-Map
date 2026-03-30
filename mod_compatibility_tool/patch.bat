@@ -1,9 +1,9 @@
 @echo off
 setlocal EnableDelayedExpansion
-title Dark Mode Map v1.0 - CSS Zip Patcher
+title Dark Mode Map v1.1 - Compatibility Tool
 color 0A
 
-echo  Dark Mode Map v1.0 - CSS Zip Patcher
+echo  Dark Mode Map v1.1 - Compatibility Tool
 echo  Patches worldmapview.css inside any mod .zip with Dark Mode colors.
 echo.
 
@@ -51,6 +51,7 @@ if errorlevel 1 (
 :: ── Auto-detect zip in script folder ─────────────────────────────
 set "ZIP_PATH="
 set "ZIP_COUNT=0"
+set "FOUND_AUTO=0"
 for %%F in ("%SD%\*.zip") do (
     set /a ZIP_COUNT+=1
     set "ZIP_PATH=%%~fF"
@@ -67,6 +68,7 @@ if !ZIP_COUNT! gtr 1 (
 )
 
 if !ZIP_COUNT! equ 1 (
+    set "FOUND_AUTO=1"
     echo   Found: !ZIP_PATH!
     echo.
     goto :run
@@ -94,8 +96,13 @@ if not exist "!ZIP_PATH!" (
 :run
 
 :: ── Run patcher ───────────────────────────────────────────────────
-echo.
-!PYTHON! "%SD%\patch_css_zip.py" "!ZIP_PATH!"
+echo.if "!FOUND_AUTO!"=="1" (
+    echo   Mod zip found automatically.
+) else (
+    echo   Using manually entered path.
+)
+echo   Zip: !ZIP_PATH!
+echo.!PYTHON! "%SD%\patch_css_zip.py" "!ZIP_PATH!"
 if errorlevel 1 (
     echo.
     echo   Patching failed. See error above.

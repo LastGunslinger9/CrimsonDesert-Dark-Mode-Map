@@ -3,3 +3,5 @@ backup/
 __pycache__/
 *.py[cod]
 nexusdescription.txt
+crimson-desert-unpacker/
+_work/
