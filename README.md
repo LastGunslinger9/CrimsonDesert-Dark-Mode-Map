@@ -2,17 +2,17 @@
 
 Dark mode for the map with fully customizable color presets!
 
-Two versions are available. Pick whichever suits you:
+Two types are available. Pick whichever suits you:
 
 ---
 
-## Version 1 - JSON Mod Manager
+## JSON Mod Manager
 
 **Requires:** [JSON Mod Manager](https://www.nexusmods.com/crimsondesert/mods/TODO)
 
 ---
 
-## Version 2 - Standalone (install.bat)
+## Standalone (install.bat)
 
 **Requires:** [Python 3](https://www.python.org/downloads/): Check **"Add python.exe to PATH"** during install.
 
@@ -41,14 +41,14 @@ All map colors are defined in **colors.json** (standalone version). Edit the `"m
 
 ---
 
-## Darkmode Patcher (`darkmode_patcher/`)
+## Mod Compatibility Tool (`mod_compatibility_tool/`)
 
-Patches Dark Mode Map colors into the `worldmapview.css` inside **another mod's zip**.
+Patches Dark Mode Map colors into the `worldmapview.css` inside **another mod's zip** (e.g. No Fog of War).
 
 **Requires:** [Python 3](https://www.python.org/downloads/): Check **"Add python.exe to PATH"** during install.
 
-1. Drop the target mod `.zip` into the `darkmode_patcher/` folder
+1. Drop the target mod `.zip` into the `mod_compatibility_tool/` folder
 2. Double-click **patch.bat**
-3. If no zip is present, you'll be prompted to drag one in
+3. If no zip is detected automatically, you'll be prompted to enter the path
 
 Colors are read from **colors.json** in the same folder. Edit them before running to customize.
