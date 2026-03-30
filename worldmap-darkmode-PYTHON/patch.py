@@ -261,10 +261,6 @@ def apply_color_scoped(text: str, preset: str, old_str: str, cur_rgb: str) -> tu
     return text[:bm.start()] + new_block + text[bm.end():], 1
 
 
-# Printable fill for CSS comment body tuning. Excludes * to prevent premature comment close
-_PRINTABLE_FILL = bytes(c for c in range(0x21, 0x7F) if c != 0x2A)  # 93 chars
-
-
 def _pad_to_orig_size(data: bytes, orig_size: int) -> bytes:
     if len(data) >= orig_size:
         return data[:orig_size]
@@ -337,88 +333,103 @@ def fit_to_orig_size(plaintext: bytes, orig_size: int) -> bytes:
     return _pad_to_orig_size(plaintext, orig_size)
 
 
-def _rand_fill(n: int) -> bytes:
-    import random
-    rng = random.Random(0xC4FEB4BE)
-    return bytes(rng.choice(_PRINTABLE_FILL) for _ in range(n))
+def _make_css_incompressible(length: int) -> bytes:
+    """Generate incompressible printable ASCII safe inside CSS /* */ comments."""
+    # Printable ASCII (0x21-0x7E) excluding / and * (would close the comment)
+    _ALPHABET = bytes(c for c in range(0x21, 0x7F) if c not in (ord('/'), ord('*')))
+    rand = os.urandom(length)
+    return bytes(_ALPHABET[b % len(_ALPHABET)] for b in rand)
 
 
 def match_comp_size(plaintext_bytes: bytes, target: int) -> bytes:
     """LZ4-compress plaintext_bytes to exactly target compressed bytes.
 
     Fast path: if direct compress matches target, return immediately.
-    Slow path: pick the largest CSS comment and fill its body with a mix of
-    pseudo-random printable ASCII (incompressible) and spaces (compressible)
-    to tune the compressed size to exactly target.
+    Slow path: flatten all byte positions across ALL CSS comment bodies and
+    binary-search how many to replace with incompressible os.urandom bytes.
 
-    Binary-searches the fill ratio; retries with fresh random bytes if the
-    first attempt misses (LZ4 is not strictly monotonic — a different fill
-    gives a different compression curve that may hit previously-unreachable
-    sizes). Falls back to a full linear scan on the last fill if all retries
-    fail.
+    Using every byte position across all comments (not just ratio in the
+    largest one) gives much finer-grained control over compressed size.
+    Retries up to 8 times with fresh random bytes — LZ4 is not strictly
+    monotonic, so a different fill gives a different curve that may reach
+    previously-unreachable sizes. Mirrors the repacker's strategy.
     """
     fast = lz4.block.compress(plaintext_bytes, store_size=False)
     if len(fast) == target:
         return fast
 
-    comments = sorted(_find_css_comments(plaintext_bytes), key=lambda c: c[1] - c[0], reverse=True)
+    comments = _find_css_comments(plaintext_bytes)
     if not comments:
         raise RuntimeError(
             f'Cannot match comp_size={len(fast)} to target={target}: '
             'no CSS comments found for tuning.')
 
-    body_start, body_end = comments[0]
-    body_len = body_end - body_start
+    # Flatten all byte positions across all comment bodies.
+    # More positions = finer-grained compressed-size control.
+    positions = [i for cstart, cend in comments for i in range(cstart, cend)]
+    total = len(positions)
 
-    def _build(n_fill: int, fill: bytes) -> bytes:
-        ba = bytearray(plaintext_bytes)
-        for i in range(body_len):
-            ba[body_start + i] = fill[i] if i < n_fill else 0x20
-        return bytes(ba)
+    # Baseline: all comment body bytes set to spaces (most compressible state).
+    baseline = bytearray(plaintext_bytes)
+    for pos in positions:
+        baseline[pos] = 0x20
+    baseline = bytes(baseline)
 
-    # Check reachable range once to detect CSS changes (game update).
-    fill0 = _rand_fill(body_len)
-    c_lo = len(lz4.block.compress(_build(0, fill0), store_size=False))
-    c_hi = len(lz4.block.compress(_build(body_len, fill0), store_size=False))
-
-    if not (c_lo <= target <= c_hi):
+    c_lo = len(lz4.block.compress(baseline, store_size=False))
+    if target < c_lo:
         raise RuntimeError(
-            f'Could not match comp_size {target}: reachable range [{c_lo}, {c_hi}] '
-            f'(tuning comment at {body_start}..{body_end}, {body_len} bytes). '
+            f'Could not match comp_size {target}: minimum reachable is {c_lo}. '
             'The CSS may have changed after a game update.')
 
-    # Retry up to 8 times with fresh random fills — LZ4 is not strictly
-    # monotonic, so a different fill gives a different compression curve
-    # that may hit sizes unreachable with the first fill.
-    fill = fill0
-    for _attempt in range(8):
-        if _attempt > 0:
-            fill = _rand_fill(body_len)
-        lo, hi = 0, body_len
+    best_c_hi = 0
+
+    def _try_fill(rand_fill: bytes) -> bytes | None:
+        nonlocal best_c_hi
+
+        def _build(n: int) -> bytes:
+            trial = bytearray(baseline)
+            for idx in range(n):
+                trial[positions[idx]] = rand_fill[idx]
+            return bytes(trial)
+
+        c_all = len(lz4.block.compress(_build(total), store_size=False))
+        best_c_hi = max(best_c_hi, c_all)
+        if target > c_all:
+            return None  # this fill can't reach high enough — retry
+
+        lo, hi = 0, total
         while lo <= hi:
             mid = (lo + hi) // 2
-            c_bytes = lz4.block.compress(_build(mid, fill), store_size=False)
-            n = len(c_bytes)
-            if n == target:
+            c_bytes = lz4.block.compress(_build(mid), store_size=False)
+            c = len(c_bytes)
+            if c == target:
                 return c_bytes
-            elif n < target:
+            elif c < target:
                 lo = mid + 1
             else:
                 hi = mid - 1
-        for n in range(max(0, lo - 32), min(lo + 32, body_len + 1)):
-            c_bytes = lz4.block.compress(_build(n, fill), store_size=False)
+
+        for n in range(max(0, lo - 50), min(lo + 50, total + 1)):
+            c_bytes = lz4.block.compress(_build(n), store_size=False)
             if len(c_bytes) == target:
                 return c_bytes
 
-    # Last resort: full linear scan over the entire range with the final fill.
-    for n in range(body_len + 1):
-        c_bytes = lz4.block.compress(_build(n, fill), store_size=False)
-        if len(c_bytes) == target:
-            return c_bytes
+        return None
+
+    for _ in range(8):
+        result = _try_fill(_make_css_incompressible(total))
+        if result is not None:
+            return result
+
+    if target > best_c_hi:
+        raise RuntimeError(
+            f'Could not match comp_size {target}: reachable range [{c_lo}, {best_c_hi}] '
+            f'({len(comments)} comment(s), {total} positions). '
+            'The CSS may have changed after a game update.')
 
     raise RuntimeError(
-        f'Could not match comp_size {target} after 8 retries with fresh random '
-        f'fills (range [{c_lo}, {c_hi}]). Internal error.')
+        f'Could not match comp_size {target} after 8 retries '
+        f'(range [{c_lo}, {best_c_hi}], {total} tuning positions). Internal error.')
 
 
 if __name__ == '__main__':
