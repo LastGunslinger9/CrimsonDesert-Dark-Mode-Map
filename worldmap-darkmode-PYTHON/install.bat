@@ -1,9 +1,9 @@
 @echo off
 setlocal EnableDelayedExpansion
-title Dark Mode Map v1.1.1 - Install
+title Dark Mode Map v1.1.2 - Install
 color 0A
 
-echo  Dark Mode Map v1.1.1 - Install
+echo  Dark Mode Map v1.1.2 - Install
 echo.
 
 set "SD=%~dp0"

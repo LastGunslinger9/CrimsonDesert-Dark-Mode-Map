@@ -1,9 +1,9 @@
 @echo off
 setlocal EnableDelayedExpansion
-title Dark Mode Map v1.1.1 - Compatibility Tool
+title Dark Mode Map v1.1.2 - Compatibility Tool
 color 0A
 
-echo  Dark Mode Map v1.1.1 - Compatibility Tool
+echo  Dark Mode Map v1.1.2 - Compatibility Tool
 echo  Patches worldmapview.css inside any mod .zip with Dark Mode colors.
 echo.
 

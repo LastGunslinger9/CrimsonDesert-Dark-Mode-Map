@@ -324,9 +324,15 @@ def match_comp_size(plaintext_bytes: bytes, target: int) -> bytes:
     """LZ4-compress plaintext_bytes to exactly target compressed bytes.
 
     Fast path: if direct compress matches target, return immediately.
-    Slow path: pick the largest CSS comment and binary-search filling its body
-    with pseudo-random printable ASCII (incompressible) vs spaces (compressible)
-    to tune the compressed size up or down to exactly target.
+    Slow path: pick the largest CSS comment and fill its body with a mix of
+    pseudo-random printable ASCII (incompressible) and spaces (compressible)
+    to tune the compressed size to exactly target.
+
+    Binary-searches the fill ratio; retries with fresh random bytes if the
+    first attempt misses (LZ4 is not strictly monotonic — a different fill
+    gives a different compression curve that may hit previously-unreachable
+    sizes). Falls back to a full linear scan on the last fill if all retries
+    fail.
     """
     fast = lz4.block.compress(plaintext_bytes, store_size=False)
     if len(fast) == target:
@@ -340,16 +346,17 @@ def match_comp_size(plaintext_bytes: bytes, target: int) -> bytes:
 
     body_start, body_end = comments[0]
     body_len = body_end - body_start
-    fill     = _rand_fill(body_len)
 
-    def _build(n_fill: int) -> bytes:
+    def _build(n_fill: int, fill: bytes) -> bytes:
         ba = bytearray(plaintext_bytes)
         for i in range(body_len):
             ba[body_start + i] = fill[i] if i < n_fill else 0x20
         return bytes(ba)
 
-    c_lo = len(lz4.block.compress(_build(0), store_size=False))
-    c_hi = len(lz4.block.compress(_build(body_len), store_size=False))
+    # Check reachable range once to detect CSS changes (game update).
+    fill0 = _rand_fill(body_len)
+    c_lo = len(lz4.block.compress(_build(0, fill0), store_size=False))
+    c_hi = len(lz4.block.compress(_build(body_len, fill0), store_size=False))
 
     if not (c_lo <= target <= c_hi):
         raise RuntimeError(
@@ -357,26 +364,38 @@ def match_comp_size(plaintext_bytes: bytes, target: int) -> bytes:
             f'(tuning comment at {body_start}..{body_end}, {body_len} bytes). '
             'The CSS may have changed after a game update.')
 
-    lo, hi = 0, body_len
-    while lo <= hi:
-        mid = (lo + hi) // 2
-        c_bytes = lz4.block.compress(_build(mid), store_size=False)
-        n = len(c_bytes)
-        if n == target:
-            return c_bytes
-        elif n < target:
-            lo = mid + 1
-        else:
-            hi = mid - 1
+    # Retry up to 8 times with fresh random fills — LZ4 is not strictly
+    # monotonic, so a different fill gives a different compression curve
+    # that may hit sizes unreachable with the first fill.
+    fill = fill0
+    for _attempt in range(8):
+        if _attempt > 0:
+            fill = _rand_fill(body_len)
+        lo, hi = 0, body_len
+        while lo <= hi:
+            mid = (lo + hi) // 2
+            c_bytes = lz4.block.compress(_build(mid, fill), store_size=False)
+            n = len(c_bytes)
+            if n == target:
+                return c_bytes
+            elif n < target:
+                lo = mid + 1
+            else:
+                hi = mid - 1
+        for n in range(max(0, lo - 32), min(lo + 32, body_len + 1)):
+            c_bytes = lz4.block.compress(_build(n, fill), store_size=False)
+            if len(c_bytes) == target:
+                return c_bytes
 
-    for n in range(max(0, lo - 32), min(lo + 32, body_len + 1)):
-        c_bytes = lz4.block.compress(_build(n), store_size=False)
+    # Last resort: full linear scan over the entire range with the final fill.
+    for n in range(body_len + 1):
+        c_bytes = lz4.block.compress(_build(n, fill), store_size=False)
         if len(c_bytes) == target:
             return c_bytes
 
     raise RuntimeError(
-        f'Could not match comp_size {target} after binary search '
-        f'(range [{c_lo}, {c_hi}]). Internal error.')
+        f'Could not match comp_size {target} after 8 retries with fresh random '
+        f'fills (range [{c_lo}, {c_hi}]). Internal error.')
 
 
 if __name__ == '__main__':
