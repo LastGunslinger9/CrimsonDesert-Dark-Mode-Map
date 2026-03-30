@@ -38,3 +38,17 @@ Re-run **install.bat**. The patcher automatically re-reads the game's archive in
 ## Customization
 
 All map colors are defined in **colors.json** (standalone version). Edit the `"mod"` values (e.g. `"#030608"`) to create your own color preset and share it with others.
+
+---
+
+## Darkmode Patcher (`darkmode_patcher/`)
+
+Patches Dark Mode Map colors into the `worldmapview.css` inside **another mod's zip**.
+
+**Requires:** [Python 3](https://www.python.org/downloads/): Check **"Add python.exe to PATH"** during install.
+
+1. Drop the target mod `.zip` into the `darkmode_patcher/` folder
+2. Double-click **patch.bat**
+3. If no zip is present, you'll be prompted to drag one in
+
+Colors are read from **colors.json** in the same folder. Edit them before running to customize.
