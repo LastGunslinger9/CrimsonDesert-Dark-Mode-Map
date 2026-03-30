@@ -468,7 +468,7 @@ if __name__ == '__main__':
 
     # ── Patch mode ────────────────────────────────────────────────────
     print('Applying dark mode...')
-    text = backup_file.read_text(encoding='utf-8', newline='')
+    text = backup_file.read_bytes().decode('utf-8').replace('\r\n', '\n').replace('\r', '\n')
 
     colors = json.loads((HERE / 'colors.json').read_text(encoding='utf-8'))
 
