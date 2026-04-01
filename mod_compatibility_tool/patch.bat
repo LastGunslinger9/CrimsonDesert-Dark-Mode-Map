@@ -1,9 +1,9 @@
 @echo off
 setlocal EnableDelayedExpansion
-title Dark Mode Map v1.1.2 - Compatibility Tool
+title Dark Mode Map v1.1.3 - Compatibility Tool
 color 0A
 
-echo  Dark Mode Map v1.1.2 - Compatibility Tool
+echo  Dark Mode Map v1.1.3 - Compatibility Tool
 echo  Patches worldmapview.css inside any mod .zip with Dark Mode colors.
 echo.
 
@@ -96,13 +96,15 @@ if not exist "!ZIP_PATH!" (
 :run
 
 :: ── Run patcher ───────────────────────────────────────────────────
-echo.if "!FOUND_AUTO!"=="1" (
+echo.
+if "!FOUND_AUTO!"=="1" (
     echo   Mod zip found automatically.
 ) else (
     echo   Using manually entered path.
 )
 echo   Zip: !ZIP_PATH!
-echo.!PYTHON! "%SD%\patch_css_zip.py" "!ZIP_PATH!"
+echo.
+!PYTHON! "%SD%\patch_css_zip.py" "!ZIP_PATH!"
 if errorlevel 1 (
     echo.
     echo   Patching failed. See error above.
