@@ -1,0 +1,51 @@
+﻿Turns the world map dark. Fully customizable. Change any color to your liking and share your own preset with the community.
+
+[list]
+[*]Dark mode map[/*]
+[*]Fully customizable via [b]colors.json.[/b] Edit any color and re-install[/*]
+[*]Two methods: JSON Mod Manager and Standalone (Python)[/*]
+[*]Includes a generator tool to rebuild the JSON file after game updates[/*]
+[/list]
+
+[size=4][b]JSON Mod Manager[/b][/size]
+Use with [url=https://www.nexusmods.com/crimsondesert/mods/113]JSON Mod Manager[/url]
+
+
+[size=4][b]Standalone (Python)[/b][/size]
+[list=1]
+[*]Extract the zip anywhere[/*]
+[*]Double-click [b]install.bat[/b].[/*]
+[*]It will auto-detect your Crimson Desert install via Steam. If not found, you'll be prompted to enter the path manually.[/*]
+[/list]
+To uninstall, double-click [b]uninstall.bat[/b] to restore vanilla colors.
+[size=3]Requirements (Standalone only)[/size]
+- [url=https://www.python.org/downloads/]Python 3[/url]: During install, check "Add python.exe to PATH"
+- Required Python packages are installed automatically.
+
+
+[size=4][b]JSON Generator Tool[/b][/size]
+If the game updates and the JSON mod stops working, use this tool to rebuild [b]worldmap_darkmode.json[/b] from the current game files — no new mod release needed in most cases.
+[list=1]
+[*]Download [b]Dark-Mode-Map-JSON-Generator-v1.2.zip[/b] from the files tab[/*]
+[*]Extract anywhere[/*]
+[*]Double-click [b]generate_json.bat[/b][/*]
+[*]Load the output [b]worldmap_darkmode.json[/b] with your JSON mod manager[/*]
+[/list]
+[size=3]Requirements[/size]
+- [url=https://www.python.org/downloads/]Python 3[/url]: During install, check "Add python.exe to PATH"
+- Required Python packages are installed automatically.
+
+
+[size=4][b]Darkmode Patcher tool[/b][/size]
+Patches dark mode into another mod. Drop the target zip into the [b]mod-compatibility-tool[/b] folder and run [b]patch.bat[/b].
+
+
+[size=4][b]Customization[/b][/size]
+All colors are defined in [b]colors.json[/b]. Edit any [b]"mod"[/b] value (e.g. [b]"#030608"[/b]) then re-run [b]install.bat[/b] to apply. You can share your colors.json with others as a custom preset.
+
+
+[size=4][b]Credits[/b][/size]
+Thanks to the Crimson Desert modding community for the inspiration and tools!.
+
+
+[center][url=https://github.com/LastGunslinger9/CrimsonDesert-Dark-Mode-Map]Source Code on GitHub[/url][/center]
