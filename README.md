@@ -41,6 +41,23 @@ All map colors are defined in **colors.json** (standalone version). Edit the `"m
 
 ---
 
+## JSON Generator Tool (`JSON-generator-tool/`)
+
+Rebuilds `worldmap_darkmode.json` from the current game files. Useful after a game update invalidates the byte offsets in the JSON mod — run this to regenerate a compatible file without needing a new mod release.
+
+**Requires:** [Python 3](https://www.python.org/downloads/): Check **"Add python.exe to PATH"** during install.
+
+1. Double-click **generate_json.bat**
+2. It auto-detects your Steam install (or prompts for the path)
+3. Installs required Python packages (`lz4`, `cryptography`) if missing
+4. Extracts the current vanilla CSS from the game archives, recalculates all byte offsets, and writes `worldmap_darkmode.json` next to the bat
+
+The output file can then be loaded directly with your JSON mod manager.
+
+> **Note:** This should produce a valid file after most game patches. It will only fail if Pearl Abyss significantly restructures the world map CSS — in which case a new mod release will be needed.
+
+---
+
 ## Mod Compatibility Tool (`mod_compatibility_tool/`)
 
 Patches Dark Mode Map colors into the `worldmapview.css` inside **another mod's zip** (e.g. No Fog of War).
