@@ -377,12 +377,10 @@ def main():
         sys.exit(f'ERROR: game_dir not found: {game_dir}')
 
     # --- Locate colors.json ---
-    # Script lives in json-generator/; repo root is one level up.
-    repo_root = here.parent
     if args.colors:
         colors_path = Path(args.colors)
     else:
-        colors_path = repo_root / 'worldmap-darkmode-PYTHON' / 'colors.json'
+        colors_path = here / 'colors.json'
         if not colors_path.exists():
             sys.exit(f'ERROR: colors.json not found at {colors_path}\nUse --colors <path> to specify it')
 
