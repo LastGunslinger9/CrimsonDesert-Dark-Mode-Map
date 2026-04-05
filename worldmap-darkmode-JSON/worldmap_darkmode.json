@@ -1,7 +1,7 @@
 {
   "modinfo": {
     "title": "Dark Mode Map",
-    "version": "1.1.2",
+    "version": "1.2",
     "author": "TheLastGunslinger9",
     "description": "Replaces the world map color palette with a dark theme.",
     "nexus_url": "https://www.nexusmods.com/crimsondesert/mods/411"
@@ -84,12 +84,6 @@
           "patched": "31"
         },
         {
-          "offset": 40284,
-          "label": "_mapLandOutlineColor: #53553cff -> #55513C [preset-worldmap]",
-          "original": "63",
-          "patched": "43"
-        },
-        {
           "offset": 40364,
           "label": "_mapSeaOutlineColor: #6f7778ff -> #5a6d80 [preset-worldmap]",
           "original": "366637373738",
@@ -164,8 +158,14 @@
         {
           "offset": 48352,
           "label": "_originalColorTint: #8fd6ff -> #3F6073 [preset-worldmap-region-religion-area]",
-          "original": "386664366666",
-          "patched": "334636303733"
+          "original": "38",
+          "patched": "33"
+        },
+        {
+          "offset": 48354,
+          "label": "_originalColorTint: #8fd6ff -> #3F6073 [preset-worldmap-region-religion-area]",
+          "original": "64366666",
+          "patched": "36303733"
         },
         {
           "offset": 49156,
