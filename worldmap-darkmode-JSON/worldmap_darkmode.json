@@ -1,7 +1,7 @@
 {
   "modinfo": {
     "title": "Dark Mode Map",
-    "version": "1.16.00",
+    "version": "1.17.00",
     "author": "TheLastGunslinger9",
     "description": "Replaces the world map color palette with a dark theme.",
     "nexus_url": "https://www.nexusmods.com/crimsondesert/mods/411"
@@ -66,163 +66,163 @@
           "patched": "653237623734"
         },
         {
-          "offset": 52444,
+          "offset": 52478,
           "label": "_originalColorTint: #10314bff -> #021424 [preset-worldmap]",
           "original": "313033313462",
           "patched": "303231343234"
         },
         {
-          "offset": 52716,
+          "offset": 52750,
           "label": "_mapLandOutlineColor: #53553cff -> #55513C [preset-worldmap]",
           "original": "33",
           "patched": "35"
         },
         {
-          "offset": 52718,
+          "offset": 52752,
           "label": "_mapLandOutlineColor: #53553cff -> #55513C [preset-worldmap]",
           "original": "35",
           "patched": "31"
         },
         {
-          "offset": 52800,
+          "offset": 52834,
           "label": "_mapSeaOutlineColor: #6f7778ff -> #5a6d80 [preset-worldmap]",
           "original": "366637373738",
           "patched": "356136643830"
         },
         {
-          "offset": 53239,
+          "offset": 53273,
           "label": "_originalColorTint: #10314bff -> #01060C [preset-worldmap-overfog]",
           "original": "313033313462",
           "patched": "303130363043"
         },
         {
-          "offset": 54101,
+          "offset": 54135,
           "label": "_originalColorTint: #c3cfe6ff -> #030405 [preset-worldmap-2]",
           "original": "63",
           "patched": "30"
         },
         {
-          "offset": 54103,
+          "offset": 54137,
           "label": "_originalColorTint: #c3cfe6ff -> #030405 [preset-worldmap-2]",
           "original": "63666536",
           "patched": "30343035"
         },
         {
-          "offset": 54225,
+          "offset": 54259,
           "label": "_mapLandOutlineColor: #7c7f5bff -> #554D3C [preset-worldmap-2]",
           "original": "376337663562",
           "patched": "353534443343"
         },
         {
-          "offset": 54703,
+          "offset": 54737,
           "label": "_originalColorTint: #afbcd3ff -> #060708 [preset-worldmap-sea]",
           "original": "616662636433",
           "patched": "303630373038"
         },
         {
-          "offset": 55241,
+          "offset": 55275,
           "label": "_originalColorTint: #7b8391ff -> #010102 [preset-worldmap-fog]",
           "original": "376238333931",
           "patched": "303130313032"
         },
         {
-          "offset": 56001,
+          "offset": 56035,
           "label": "_originalColorTint: #535758ff -> #010102 [preset-worldmap-abyss-fog]",
           "original": "353335373538",
           "patched": "303130313032"
         },
         {
-          "offset": 56250,
+          "offset": 56284,
           "label": "_originalColorTint: #717779ff -> #060608 [preset-worldmap-abyss-border-fog]",
           "original": "373137373739",
           "patched": "303630363038"
         },
         {
-          "offset": 56526,
+          "offset": 56560,
           "label": "_originalColorTint: #290303ff -> #802020 [preset-worldmap-wanted-region]",
           "original": "323930333033",
           "patched": "383032303230"
         },
         {
-          "offset": 57258,
+          "offset": 57292,
           "label": "_originalColorTint: #802020ff -> #290303 [preset-worldmap-restricted-area-town]",
           "original": "383032303230",
           "patched": "323930333033"
         },
         {
-          "offset": 59340,
+          "offset": 59374,
           "label": "_originalColorTint: #7b8391ff -> #010101 [preset-worldmap-none-play-region]",
           "original": "3762383339",
           "patched": "3031303130"
         },
         {
-          "offset": 60829,
+          "offset": 60863,
           "label": "_originalColorTint: #8fd6ff -> #3F6073 [preset-worldmap-region-religion-area]",
           "original": "38",
           "patched": "33"
         },
         {
-          "offset": 60831,
+          "offset": 60865,
           "label": "_originalColorTint: #8fd6ff -> #3F6073 [preset-worldmap-region-religion-area]",
           "original": "64366666",
           "patched": "36303733"
         },
         {
-          "offset": 61633,
+          "offset": 61667,
           "label": "_originalColorTint: #5c6475ff -> #766d56 [preset-worldmap-road]",
           "original": "3563",
           "patched": "3736"
         },
         {
-          "offset": 61636,
+          "offset": 61670,
           "label": "_originalColorTint: #5c6475ff -> #766d56 [preset-worldmap-road]",
           "original": "343735",
           "patched": "643536"
         },
         {
-          "offset": 61804,
+          "offset": 61838,
           "label": "_mapLandOutlineColor: #a2987fff -> #685f4b [preset-worldmap-road]",
           "original": "613239383766",
           "patched": "363835663462"
         },
         {
-          "offset": 62740,
+          "offset": 62640,
           "label": "_originalColorTint: #707e6fff -> #131C13 [preset-worldmap-mountain]",
           "original": "373037653666",
           "patched": "313331433133"
         },
         {
-          "offset": 62864,
+          "offset": 62764,
           "label": "_mapLandOutlineColor: #7f8d79ff -> #394534 [preset-worldmap-mountain]",
           "original": "376638643739",
           "patched": "333934353334"
         },
         {
-          "offset": 64161,
+          "offset": 64061,
           "label": "_originalColorTint: #7d9cd2 -> #030405 [preset-worldmap-abyss-background-hex]",
           "original": "376439636432",
           "patched": "303330343035"
         },
         {
-          "offset": 82335,
+          "offset": 82235,
           "label": "background-color: #d14d45 -> #e27b74",
           "original": "643134643435",
           "patched": "653237623734"
         },
         {
-          "offset": 94324,
+          "offset": 94224,
           "label": "background-color: #d14d45 -> #e27b74",
           "original": "643134643435",
           "patched": "653237623734"
         },
         {
-          "offset": 114306,
+          "offset": 114206,
           "label": "background-color: #d14d45 -> #e27b74",
           "original": "643134643435",
           "patched": "653237623734"
         },
         {
-          "offset": 151728,
+          "offset": 151628,
           "label": "background-color: #d14d45 -> #e27b74",
           "original": "643134643435",
           "patched": "653237623734"
