@@ -2,36 +2,13 @@
 
 Dark mode for the map with fully customizable color presets!
 
-Two types are available. Pick whichever suits you:
+Install it with a mod manager — that's the recommended route. A standalone installer is still included at the bottom of this page if you'd rather not use one.
 
 ---
 
-## Definitive Mod Manager (DMM)
+## Definitive Mod Manager (DMM) — Recommended
 
 **Requires:** [Definitive Mod Manager (DMM)](https://www.nexusmods.com/crimsondesert/mods/633)
-
----
-
-## Standalone (install.bat)
-
-**Requires:** [Python 3](https://www.python.org/downloads/): Check **"Add python.exe to PATH"** during install.
-
-### Install
-
-Double-click **install.bat**. It will:
-1. Detect your Crimson Desert game folder via Steam (or prompt you to enter the path manually if not found)
-2. Install required Python packages (`lz4`, `cryptography`) if missing
-3. Patch the world map CSS in-place
-
-### Uninstall
-
-Double-click **uninstall.bat** to restore vanilla colors.
-
-A backup of the original CSS is saved to the `backup/` folder on first install and is used for restoration.
-
-### After a game update
-
-Re-run **install.bat**. The patcher automatically re-reads the game's archive index to find the current file location, so it does not need updating between patches.
 
 ---
 
@@ -69,3 +46,28 @@ Patches Dark Mode Map colors into the `worldmapview.css` inside **another mod's 
 3. If no zip is detected automatically, you'll be prompted to enter the path
 
 Colors are read from **colors.json** in the same folder. Edit them before running to customize.
+
+---
+
+## Standalone (install.bat)
+
+> **Legacy method.** Use DMM above unless you specifically want an in-place patch without a mod manager.
+
+**Requires:** [Python 3](https://www.python.org/downloads/): Check **"Add python.exe to PATH"** during install.
+
+### Install
+
+Double-click **install.bat**. It will:
+1. Detect your Crimson Desert game folder via Steam (or prompt you to enter the path manually if not found)
+2. Install required Python packages (`lz4`, `cryptography`) if missing
+3. Patch the world map CSS in-place
+
+### Uninstall
+
+Double-click **uninstall.bat** to restore vanilla colors.
+
+A backup of the original CSS is saved to the `backup/` folder on first install and is used for restoration.
+
+### After a game update
+
+Re-run **install.bat**. The patcher automatically re-reads the game's archive index to find the current file location, so it does not need updating between patches.
