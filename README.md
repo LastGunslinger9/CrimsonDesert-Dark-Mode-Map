@@ -6,9 +6,9 @@ Two types are available. Pick whichever suits you:
 
 ---
 
-## JSON Mod Manager
+## Definitive Mod Manager (DMM)
 
-**Requires:** [JSON Mod Manager](https://www.nexusmods.com/crimsondesert/mods/TODO)
+**Requires:** [Definitive Mod Manager (DMM)](https://www.nexusmods.com/crimsondesert/mods/633)
 
 ---
 
@@ -52,7 +52,7 @@ Rebuilds `worldmap_darkmode.json` from the current game files. Useful after a ga
 3. Installs required Python packages (`lz4`, `cryptography`) if missing
 4. Extracts the current vanilla CSS from the game archives, recalculates all byte offsets, and writes `worldmap_darkmode.json` next to the bat
 
-The output file can then be loaded directly with your JSON mod manager.
+The output file can then be loaded directly with DMM.
 
 > **Note:** This should produce a valid file after most game patches. It will only fail if Pearl Abyss significantly restructures the world map CSS — in which case a new mod release will be needed.
 
