@@ -14,7 +14,16 @@ Install it with a mod manager — that's the recommended route. A standalone ins
 
 ## Customization
 
-All map colors are defined in **colors.json** (standalone version). Edit the `"mod"` values (e.g. `"#030608"`) to create your own color preset and share it with others.
+All map colors are defined in **colors.json**. Each tool reads the copy sitting next to it, so edit the one in the folder you're using.
+
+1. Open **colors.json** and change the `"mod"` values (e.g. `"#030608"`). Leave `"vanilla"` alone — that's what gets matched in the game file.
+2. Apply it:
+   - **DMM:** run **generate_json.bat** in `JSON-generator-tool/`, then load the `worldmap_darkmode.json` it writes
+   - **Standalone:** re-run **install.bat**
+
+Share your **colors.json** with others to share your preset.
+
+> **Don't hand-edit the values inside `worldmap_darkmode.json`.** They're hex-encoded ASCII at fixed byte offsets, several colors repeat at multiple offsets, and some entries cover only part of a color — regenerate from **colors.json** instead.
 
 ---
 
