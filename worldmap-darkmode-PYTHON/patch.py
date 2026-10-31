@@ -111,6 +111,38 @@ def _find_css_entry(game_dir: Path) -> tuple[Path, int, int, int]:
     raise FileNotFoundError(f'{CSS_FILENAME} not found in any PAMT under {game_dir}')
 
 
+def _read_varint(data: bytes, off: int) -> tuple[int, int]:
+    """Read a LEB128 unsigned varint; return (value, new_offset)."""
+    result = shift = 0
+    while True:
+        b = data[off]; off += 1
+        result |= (b & 0x7F) << shift
+        if not b & 0x80:
+            return result, off
+        shift += 7
+
+
+def _read_name_table(data: bytes, off: int) -> tuple[dict[int, tuple[int | None, str]], int]:
+    """
+    Parse a size-prefixed name table (folders or file nodes).
+    Each entry: varint backward byte-delta to its parent entry (0 = root),
+    u8 name length, name bytes.  Paths are built by walking parents and
+    concatenating the name fragments.
+    Returns ({rel_offset: (parent_rel or None, name)}, end_offset).
+    """
+    size = struct.unpack_from('<I', data, off)[0]; off += 4
+    start, end = off, off + size
+    table: dict[int, tuple[int | None, str]] = {}
+    while off < end:
+        rel = off - start
+        delta, off = _read_varint(data, off)
+        slen = data[off]
+        name = data[off + 1:off + 1 + slen].decode('utf-8', errors='replace')
+        table[rel] = (rel - delta if delta else None, name)
+        off += 1 + slen
+    return table, end
+
+
 def _parse_pamt_for_css(data: bytes, paz_dir: str, stem_num: int) -> tuple[Path, int, int, int] | None:
     """Parse PAMT bytes and return CSS entry, or None if not found."""
     if len(data) < 8:
@@ -126,36 +158,16 @@ def _parse_pamt_for_css(data: bytes, paz_dir: str, stem_num: int) -> tuple[Path,
         if i < paz_count - 1:
             off += 4  # separator
 
-    # Folder section
-    folder_size = struct.unpack_from('<I', data, off)[0]; off += 4
-    folder_end = off + folder_size
-    folder_prefix = ''
-    while off < folder_end:
-        parent = struct.unpack_from('<I', data, off)[0]
-        slen = data[off + 4]
-        name = data[off + 5:off + 5 + slen].decode('utf-8', errors='replace')
-        if parent == 0xFFFFFFFF:
-            folder_prefix = name
-        off += 5 + slen
-
-    # Node section (path tree)
-    node_size = struct.unpack_from('<I', data, off)[0]; off += 4
-    node_start = off
-    nodes: dict[int, tuple[int, str]] = {}
-    while off < node_start + node_size:
-        rel = off - node_start
-        parent = struct.unpack_from('<I', data, off)[0]
-        slen = data[off + 4]
-        name = data[off + 5:off + 5 + slen].decode('utf-8', errors='replace')
-        nodes[rel] = (parent, name)
-        off += 5 + slen
+    # Folder and node sections (path trees)
+    _folders, off = _read_name_table(data, off)
+    nodes, off = _read_name_table(data, off)
 
     def _build_path(node_ref: int) -> str:
         parts: list[str] = []
         cur = node_ref
-        while cur != 0xFFFFFFFF and len(parts) < 64:
+        while cur is not None and len(parts) < 256:
             if cur not in nodes:
-                break
+                return ''
             p, n = nodes[cur]
             parts.append(n)
             cur = p
@@ -163,17 +175,25 @@ def _parse_pamt_for_css(data: bytes, paz_dir: str, stem_num: int) -> tuple[Path,
 
     # Record section
     folder_count = struct.unpack_from('<I', data, off)[0]; off += 4
-    off += 4  # hash
     off += folder_count * 16
+    file_count = struct.unpack_from('<I', data, off)[0]; off += 4
+    entries_off = off
+    off += file_count * 20
 
-    target = CSS_FILENAME.lower()
-    while off + 20 <= len(data):
+    # Extension table: u32 byte length, then NUL-separated extensions.
+    # File names are stored without extensions; flags >> 24 indexes this table.
+    ext_size = struct.unpack_from('<I', data, off)[0]; off += 4
+    exts = [e.decode('utf-8', errors='replace').lower()
+            for e in data[off:off + ext_size].split(b'\x00')]
+
+    target_stem, target_ext = os.path.splitext(CSS_FILENAME.lower())
+    for i in range(file_count):
         node_ref, paz_offset, comp_size, orig_size, flags = \
-            struct.unpack_from('<IIIII', data, off)
-        off += 20
-        node_path = _build_path(node_ref)
-        full_path = f'{folder_prefix}/{node_path}' if folder_prefix else node_path
-        if full_path.lower().endswith(target):
+            struct.unpack_from('<IIIII', data, entries_off + i * 20)
+        ext_idx = flags >> 24
+        if ext_idx >= len(exts) or exts[ext_idx] != target_ext:
+            continue
+        if _build_path(node_ref).rsplit('/', 1)[-1].lower() == target_stem:
             paz_index = flags & 0xFF
             paz_num = stem_num + paz_index
             paz_file = Path(paz_dir) / f'{paz_num}.paz'
